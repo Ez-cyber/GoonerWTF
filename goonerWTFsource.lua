@@ -16,181 +16,240 @@ do -- startup
     if (not LRM_TotalExecutions) then LRM_TotalExecutions = "unknown" end;
     if (not LRM_SecondsLeft) then LRM_SecondsLeft = "9999999" end;
 
-    do --// your buypass
-        if (not LPH_OBFUSCATED) then
-            if not getgenv then
-                getgenv = function()
-                    return _G
-                end
-            end
+   repeat
+	task.wait()
+until game.IsLoaded(game)
+do --// obfuscated check
+	if not LPH_OBFUSCATED then
+		LPH_JIT = function(Function)
+			return Function
+		end
+		LPH_JIT_MAX = function(Function)
+			return Function
+		end
+		LPH_NO_VIRTUALIZE = function(Function)
+			return Function
+		end
+		LPH_NO_UPVALUES = function(Function)
+			return function(...)
+				return Function(...)
+			end
+		end
+		LPH_ENCSTR = function(String)
+			return String
+		end
+		LPH_ENCNUM = function(Number)
+			return Number
+		end
+		LPH_CRASH = function()
+			return rconsoleprint("DEBUG: CLIENT CALLED CRASH")
+		end
 
-            if not cloneref then
-                cloneref = function(Reference)
-                    return Reference
-                end
-            end
+		if not getgenv then
+			getgenv = function()
+				return _G
+			end
+		end
 
-            if not loadfile then
-                loadfile = function(...)
-                    return ...
-                end
-            end
+		if not cloneref then
+			cloneref = function(Reference)
+				return Reference
+			end
+		end
 
-            if not readfile then
-                readfile = function(...)
-                    return ...
-                end
-            end
+		if not loadfile then
+			loadfile = function(...)
+				return ...
+			end
+		end
 
-            if not request then
-                request = function(...)
-                    return ...
-                end
-            end
+		if not readfile then
+			readfile = function(...)
+				return ...
+			end
+		end
 
-            if not clonefunction then
-                clonefunction = function(f)
-                    return f
-                end
-            end
+		if not request then
+			request = function(...)
+				return ...
+			end
+		end
 
-            if not newcclosure then
-                newcclosure = function(...)
-                    return ...
-                end
-            end
+		if not clonefunction then
+			clonefunction = function(f)
+				return f
+			end
+		end
 
-            if not hookfunction then
-                hookfunction = function() end
-            end
+		if not newcclosure then
+			newcclosure = function(...)
+				return ...
+			end
+		end
 
-            if not getrenv then
-                getrenv = function()
-                    return {}
-                end
-            end
-        end
+		if not hookfunction then
+			hookfunction = function() end
+		end
 
-        local Start = tick()
-        local Executor = identifyexecutor()
+		if not getrenv then
+			getrenv = function()
+				return {}
+			end
+		end
+	end
 
-        -- print = function(str)
-        -- 	rconsoleprint(str .. "\n")
-        -- end
+	local Start = tick()
+	local Executor = identifyexecutor()
 
-        local HttpService = game:GetService("HttpService")
+	-- print = function(str)
+	-- 	rconsoleprint(str .. "\n")
+	-- end
 
-        local GarbageCollection = getgc(true)
-        local LocalPlayer = game:GetService("Players").LocalPlayer
+	local HttpService = game:GetService("HttpService")
 
-        local Character = LocalPlayer.Character
-        local Humanoid = Character:FindFirstChild("Humanoid")
+	local GarbageCollection = getgc(true)
+	local LocalPlayer = game:GetService("Players").LocalPlayer
 
-        local Whitelist = {
-            { 2, "Highlight", "Highlight", false },
-            { 1 },
-            { { 1 }, 0 },
-            { "2", "" },
-        }
+	local Character = LocalPlayer.Character
+	local Humanoid = Character:FindFirstChild("Humanoid")
 
-        local IsTableWhitelisted = function(Table)
-            if not Table then
-                return false
-            end
+	local Whitelist = {
+		{ 2, "Highlight", "Highlight", false },
+		{ 1 },
+		{ { 1 }, 0 },
+		{ "2", "" },
+	}
 
-            for WhitelistIndex, WhitelistEntry in ipairs(Whitelist) do
-                local IsMatch = false
+	local IsTableWhitelisted = function(Table)
+		if not Table then
+			return false
+		end
 
-                if type(WhitelistEntry) == "table" then
-                    if #WhitelistEntry == #Table then
-                        IsMatch = true
-                        for EntryIndex, EntryValue in ipairs(WhitelistEntry) do
-                            if type(EntryValue) == "table" then
-                                if type(Table[EntryIndex]) ~= "table" or #EntryValue ~= #Table[EntryIndex] then
-                                    IsMatch = false
-                                    break
-                                end
-                                for SubIndex, SubValue in ipairs(EntryValue) do
-                                    if Table[EntryIndex][SubIndex] ~= SubValue then
-                                        IsMatch = false
-                                        break
-                                    end
-                                end
-                                if not IsMatch then
-                                    break
-                                end
-                            else
-                                if Table[EntryIndex] ~= EntryValue then
-                                    IsMatch = false
-                                    break
-                                end
-                            end
-                        end
-                    end
-                else
-                    if #Table == 1 and Table[1] == WhitelistEntry then
-                        IsMatch = true
-                    end
-                end
+		for WhitelistIndex, WhitelistEntry in ipairs(Whitelist) do
+			local IsMatch = false
 
-                if IsMatch then
-                    return true
-                end
-            end
+			if type(WhitelistEntry) == "table" then
+				if #WhitelistEntry == #Table then
+					IsMatch = true
+					for EntryIndex, EntryValue in ipairs(WhitelistEntry) do
+						if type(EntryValue) == "table" then
+							if type(Table[EntryIndex]) ~= "table" or #EntryValue ~= #Table[EntryIndex] then
+								IsMatch = false
+								break
+							end
+							for SubIndex, SubValue in ipairs(EntryValue) do
+								if Table[EntryIndex][SubIndex] ~= SubValue then
+									IsMatch = false
+									break
+								end
+							end
+							if not IsMatch then
+								break
+							end
+						else
+							if Table[EntryIndex] ~= EntryValue then
+								IsMatch = false
+								break
+							end
+						end
+					end
+				end
+			else
+				if #Table == 1 and Table[1] == WhitelistEntry then
+					IsMatch = true
+				end
+			end
 
-            return false
-        end
+			if IsMatch then
+				return true
+			end
+		end
 
-        for _, Table in GarbageCollection do
-            if type(Table) ~= "table" then
-                continue
-            end
+		return false
+	end
 
-            if rawget(Table, 2) == Character and rawget(Table, 0) == Humanoid then
-                local Table1 = rawget(Table, 7)
-                local Table2 = rawget(Table, 10)
+	for _, Table in GarbageCollection do
+		if type(Table) ~= "table" then
+			continue
+		end
 
-                Table1[2] = nil
-                Table2[2] = nil
+		if rawget(Table, 2) == Character and rawget(Table, 0) == Humanoid then
+			local Table1 = rawget(Table, 7)
+			local Table2 = rawget(Table, 10)
 
-                local Expected1
-                local Expected2
+			Table1[2] = nil
+			Table2[2] = nil
 
-                setmetatable(Table1, {
-                    __index = function()
-                        if IsTableWhitelisted(Expected1) then
-                            --rconsoleprint("Sanity Check Attempt #1")
-                            return Expected1
-                        else
-                            --rconsoleprint("Index Attempt #1")
-                        end
-                    end,
-                    __newindex = function(_, _, Value)
-                        Expected1 = Value
+			local Expected1
+			local Expected2
 
-                        --rconsoleprint("Ban Attempt #1: " .. HttpService:JSONEncode(Value))
-                    end,
-                })
+			setmetatable(Table1, {
+				__index = function()
+					if IsTableWhitelisted(Expected1) then
+						rconsoleprint("Sanity Check Attempt #1")
+						return Expected1
+					else
+						rconsoleprint("Index Attempt #1")
+					end
+				end,
+				__newindex = function(_, _, Value)
+					Expected1 = Value
 
-                setmetatable(Table2, {
-                    __index = function()
-                        if IsTableWhitelisted(Expected2) then
-                            --rconsoleprint("Sanity Check Attempt #2")
-                            return Expected2
-                        else
-                            --rconsoleprint("Index Attempt #2")
-                        end
-                    end,
-                    __newindex = function(_, _, Value)
-                        Expected2 = Value
+					rconsoleprint("Ban Attempt #1: " .. HttpService:JSONEncode(Value))
+				end,
+			})
 
-                        --rconsoleprint("Ban Attempt #2: " .. HttpService:JSONEncode(Value))
-                    end,
-                })
+			setmetatable(Table2, {
+				__index = function()
+					if IsTableWhitelisted(Expected2) then
+						rconsoleprint("Sanity Check Attempt #2")
+						return Expected2
+					else
+						rconsoleprint("Index Attempt #2")
+					end
+				end,
+				__newindex = function(_, _, Value)
+					Expected2 = Value
 
-                --rconsoleprint("Loaded Part 1")
-            end
-        end
+					rconsoleprint("Ban Attempt #2: " .. HttpService:JSONEncode(Value))
+				end,
+			})
+
+			rconsoleprint("Loaded Part 1")
+		end
+	end
+
+	for _, Table in GarbageCollection do
+		if type(Table) ~= "table" then
+			continue
+		end
+
+		if typeof(rawget(Table, 1)) == "Instance" and rawget(Table, 1).Name == "Remotes" then
+			local Table1 = rawget(Table, 4)
+
+			local Expected1
+
+			setmetatable(Table1, {
+				__index = function()
+					if IsTableWhitelisted(Expected1) then
+						rconsoleprint("Sanity Check Attempt #3")
+						return Expected1
+					else
+						rconsoleprint("Index Attempt #3")
+					end
+				end,
+				__newindex = function(_, _, Value)
+					Expected1 = Value
+
+					rconsoleprint("Ban Attempt #3: " .. HttpService:JSONEncode(Value))
+				end,
+			})
+
+			rconsoleprint("Loaded Part 2")
+		end
+	end
+end
+
 
         for _, Table in GarbageCollection do
             if type(Table) ~= "table" then
